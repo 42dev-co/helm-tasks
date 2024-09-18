@@ -1,0 +1,140 @@
+version: '3'
+
+tasks:
+  values:
+    silent: true
+    desc: "Prints the values of the taskfile"
+    inputs:
+      - name: chart
+        desc: "The chart name to use"
+      - name: repo
+        desc: "The repository to use"
+    cmds:
+      - |
+        if [ -z "{{.chart}}" ] || [ -z "{{.repo}}" ]; then
+          echo "Please provide a chart and a repo"
+          exit 1
+        fi
+        echo "Show default values of {{.chart}} in {{.repo}}"
+        helm show values {{.chart}} --repo {{.repo}}
+
+  deploy:
+    silent: true
+    desc: "Install a chart"
+    inputs:
+      - name: name
+        desc: "Name of the application to install as"
+      - name: description
+        desc: "Description of the application"
+      - name: chart
+        desc: "The chart name to use"
+      - name: repo
+        desc: "The repository to use"
+      - name: set_config
+        desc: "The configuration to set"
+      - name: value_file
+        desc: "The values file to use"
+      - name: version
+        desc: "The version of the chart to install"
+      - name: namespace
+        desc: "The namespace to install the chart"
+    cmds:
+      - |
+        if [ -z "{{.name}}" ] || [ -z "{{.chart}}" ] || [ -z "{{.repo}}" ] || [ -z "{{.namespace}}" ]; then
+          echo "Please provide a name, a chart, a repo, and a namespace"
+          exit 1
+        fi
+
+        # Use either set_config or value_file
+        if [ -z "{{.set_config}}" ]; then
+          config_flag="--values {{.value_file}}"
+        else
+          config_flag="{{.set_config}}"
+        fi
+
+        # Add version if it's provided
+        if [ -n "{{.version}}" ]; then
+          version_flag="--version {{.version}}"
+        else
+          version_flag=""
+        fi
+
+        # Print and execute the command
+        if [ -z "{{.description}}" ]; then
+          echo helm upgrade --install {{.name}} {{.chart}} --repo {{.repo}} --namespace {{.namespace}} --create-namespace ${version_flag} ${config_flag}
+          helm upgrade --install {{.name}} {{.chart}} --repo {{.repo}} --namespace {{.namespace}} --create-namespace ${version_flag} ${config_flag}
+        else
+          echo helm upgrade --install {{.name}} {{.chart}} --repo {{.repo}} --namespace {{.namespace}} --create-namespace --description "{{.description}}" ${version_flag} ${config_flag}
+          helm upgrade --install {{.name}} {{.chart}} --repo {{.repo}} --namespace {{.namespace}} --create-namespace --description "{{.description}}" ${version_flag} ${config_flag}
+        fi
+        
+  list:
+    silent: true
+    desc: "List all installed charts"
+    inputs: 
+      - name: namespace
+        desc: "The namespace to list the installed charts"
+    cmds:
+      - |
+        namespace="default"
+        
+        # set namespace if provided
+        if [ -n "{{.namespace}}" ]; then
+          namespace="{{.namespace}}"
+        fi
+
+        echo "Listing all installed charts"
+        helm list -n $namespace
+
+  uninstall:
+    slient: true
+    desc: "Uninstall a chart"
+    inputs:
+      - name: name
+        desc: "The app name to uninstall"
+      - name: namespace
+        desc: "The namespace to uninstall the chart"
+    cmds:
+      - |
+        if [ -z "{{.name}}" ] || [ -z "{{.namespace}}" ]; then
+          echo "Please provide a chart and a namespace"
+          exit 1
+        fi
+        echo "Uninstalling {{.name}} in namespace {{.namespace}}"
+        helm uninstall {{.name}} -n {{.namespace}}
+
+  history:
+    silent: true
+    desc: "Show the history of a release"
+    inputs:
+      - name: name
+        desc: "The name of the release"
+      - name: namespace
+        desc: "The namespace of the release"
+    cmds:
+      - |
+        if [ -z "{{.name}}" ] || [ -z "{{.namespace}}" ]; then
+          echo "Please provide a name and a namespace"
+          exit 1
+        fi
+        echo "Showing history of {{.name}} in namespace {{.namespace}}"
+        helm history {{.name}} -n {{.namespace}}
+
+  rollback:
+    silent: true
+    desc: "Rollback a release"
+    inputs:
+      - name: name
+        desc: "The name of the release"
+      - name: revision
+        desc: "The revision to rollback to"
+      - name: namespace
+        desc: "The namespace of the release"
+    cmds:
+      - |
+        if [ -z "{{.name}}" ] || [ -z "{{.revision}}" ] || [ -z "{{.namespace}}" ]; then
+          echo "Please provide a name, a revision and a namespace"
+          exit 1
+        fi
+        echo "Rolling back {{.name}} to revision {{.revision}} in namespace {{.namespace}}"
+        helm rollback {{.name}} {{.revision}} -n {{.namespace}}
