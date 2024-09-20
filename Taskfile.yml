@@ -46,7 +46,7 @@ tasks:
         fi
 
         # Use either set_config or value_file
-        if [ -z "{{.set_config}}" ]; then
+        if [ -n "{{.value_file}}" ]; then
           config_flag="--values {{.value_file}}"
         else
           config_flag="{{.set_config}}"
